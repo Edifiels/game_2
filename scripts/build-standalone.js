@@ -3,7 +3,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const root = path.resolve(__dirname, '..');
 const read = name => fs.readFileSync(path.join(root, name), 'utf8');
-const scripts = ['questions.js', 'game-core.js', 'app.js'];
+const scripts = ['questions.js', 'game-core.js', 'timer-core.js', 'app.js'];
 let html = read('index.html');
 html = html.replace('    <link rel="stylesheet" href="styles.css">', `<style>\n${read('styles.css')}\n</style>`);
 for (const name of scripts) html = html.replace(`    <script defer src="${name}"></script>\n`, '');

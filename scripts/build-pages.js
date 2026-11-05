@@ -5,7 +5,7 @@ const path = require('node:path');
 
 const root = path.resolve(__dirname, '..');
 const output = path.join(root, 'docs');
-const files = ['index.html', 'styles.css', 'questions.js', 'game-core.js', 'app.js'];
+const files = ['index.html', 'styles.css', 'questions.js', 'game-core.js', 'timer-core.js', 'app.js'];
 const standalone = path.join(root, 'Игра.html');
 const offline = path.join(output, 'game-offline.html');
 

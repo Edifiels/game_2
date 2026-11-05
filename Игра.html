@@ -111,6 +111,73 @@
   [data-theme="classic"] .category-heading h2{font-size:14px}
 }
 
+
+/* Optional question timers: the host operates them; the projector shows the count. */
+.question-timer{--timer-accent:var(--purple);--timer-surface:#faf8fd;flex:0 0 auto;padding:11px 30px;background:var(--timer-surface);border-top:1px solid var(--line)}
+.timer-heading{display:flex;align-items:center;justify-content:space-between;gap:15px;color:var(--muted);font-size:12px}
+.timer-heading>span,.timer-audience-label{display:flex;align-items:center;gap:8px;font-weight:600}
+.timer-heading svg,.timer-audience-label svg{width:17px;height:17px}
+.timer-enable-label{display:flex;align-items:center;gap:10px;cursor:pointer;font-size:11px}
+.timer-enable-label .toggle{margin:0}
+.timer-main{display:flex;align-items:center;gap:10px;margin-top:9px;min-width:0}
+.timer-modes{display:flex;align-items:center;gap:3px;padding:3px;background:#efebf5;border-radius:9px;flex-shrink:0}
+.timer-mode{min-height:32px;padding:7px 10px;border-radius:6px;background:transparent;color:var(--muted);font-size:12px;font-weight:600;white-space:nowrap}
+.timer-mode:hover{background:#e5dff0;color:var(--purple-dark)}
+.timer-mode[aria-pressed="true"]{background:#fff;color:var(--purple-dark);box-shadow:0 1px 5px #30264712}
+.timer-duration{display:flex;align-items:center;gap:7px;color:var(--muted);font-size:11px;white-space:nowrap}
+.timer-duration input{width:67px;height:36px;padding:7px 6px 7px 9px;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink);font-size:13px}
+.timer-readout{min-width:96px;margin-left:auto;text-align:right;line-height:1.1}
+.timer-readout strong{display:block;color:var(--timer-accent);font-size:31px;font-weight:750;font-variant-numeric:tabular-nums;letter-spacing:.015em;white-space:nowrap}
+.timer-readout span{display:block;margin-top:4px;color:var(--muted);font-size:10px;line-height:1.3}
+.timer-main>.button{min-height:38px;padding:9px 13px;font-size:12px}
+.timer-main>.icon-button{width:38px;padding:8px}
+.timer-track{height:3px;margin-top:10px;overflow:hidden;background:#e5deef;border-radius:5px}
+.timer-track span{display:block;height:100%;background:var(--timer-accent);border-radius:inherit;transition:width .25s linear}
+.question-timer.timer-expired{--timer-accent:#aa4351;--timer-surface:#fff1f3;border-top-color:#ebc5cc}
+.timer-expired .timer-readout span{color:#a1424e;font-weight:600}
+.audience-timer{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:0 20px;padding:14px 30px}
+.timer-audience-label{color:var(--muted);font-size:15px}
+.audience-timer .timer-readout{min-width:120px}
+.audience-timer .timer-readout strong{font-size:40px}
+.audience-timer .timer-readout span{font-size:11px}
+.audience-timer .timer-track{grid-column:1/-1;width:100%}
+[data-theme="classic"] .question-timer{--timer-accent:#ffe34c;--timer-surface:#0c2275;border-top-color:#3e5ca9}
+[data-theme="classic"] .timer-modes{background:#091b61}
+[data-theme="classic"] .timer-mode{color:#cbd7ff}
+[data-theme="classic"] .timer-mode:hover{background:#22469d;color:#fff}
+[data-theme="classic"] .timer-mode[aria-pressed="true"]{background:#ffe34c;color:#102377;box-shadow:none}
+[data-theme="classic"] .timer-duration input{background:#091b61;border-color:#5571bb;color:#fff}
+[data-theme="classic"] .timer-track{background:#29448c}
+[data-theme="classic"] .question-timer.timer-expired{--timer-accent:#ffb1bd;--timer-surface:#42265c;border-top-color:#a7678c}
+[data-theme="classic"] .timer-expired .timer-readout span{color:#ffd0d9}
+@media(min-width:761px) and (max-height:820px){
+  .question-timer{padding:9px 25px}
+  .timer-main{gap:8px;margin-top:7px}
+  .timer-mode{min-height:29px;padding:6px 8px;font-size:11px}
+  .timer-readout strong{font-size:28px}
+  .timer-main>.button{min-height:35px;padding-top:7px;padding-bottom:7px}
+  .timer-main>.icon-button{width:35px}
+  .timer-track{margin-top:8px}
+  .audience-timer{padding:11px 25px}
+  .audience-timer .timer-readout strong{font-size:35px}
+}
+@media(max-width:760px){
+  .question-timer{padding:10px 17px}
+  .timer-main{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) 36px;gap:8px}
+  .timer-modes{grid-column:1/-1;justify-content:center}
+  .timer-mode{flex:1;padding:6px 8px;font-size:11px}
+  .timer-duration{gap:5px}
+  .timer-duration input{width:59px}
+  .timer-readout{grid-column:2/-1;min-width:0;justify-self:end}
+  .timer-readout strong{font-size:28px}
+  .timer-main>.button.primary{grid-column:1/3}
+  .timer-main>.icon-button{width:36px}
+  .audience-timer{padding:11px 20px}
+  .timer-audience-label{font-size:13px}
+  .audience-timer .timer-readout{min-width:100px}
+  .audience-timer .timer-readout strong{font-size:32px}
+}
+
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
 
 </style>
@@ -513,16 +580,126 @@
 
 </script>
 <script>
+(function (root, factory) {
+  'use strict';
+  var api = factory();
+  if (typeof module === 'object' && module.exports) module.exports = api;
+  if (root) root.UnityTimer = api;
+})(typeof globalThis !== 'undefined' ? globalThis : this, function () {
+  'use strict';
+
+  var MAX_REMAINING_MS = 600000;
+  var DEFAULT_SETTINGS = Object.freeze({ enabled: false, thinkingSeconds: 60, answerSeconds: 30 });
+
+  function isRecord(value) {
+    return value !== null && typeof value === 'object' && !Array.isArray(value);
+  }
+
+  function validMode(mode) {
+    return mode === 'thinking' || mode === 'answer';
+  }
+
+  function validQuestionId(questionId) {
+    return typeof questionId === 'string' && questionId.length <= 64 && /^[a-z]+-\d+$/.test(questionId);
+  }
+
+  function validTimestamp(value) {
+    return typeof value === 'number' && Number.isFinite(value) && value >= 0 && value <= Number.MAX_SAFE_INTEGER;
+  }
+
+  function normalizeSettings(value) {
+    var settings = isRecord(value) ? value : {};
+    function seconds(key) {
+      return Number.isInteger(settings[key]) && settings[key] >= 5 && settings[key] <= 600 ? settings[key] : DEFAULT_SETTINGS[key];
+    }
+    return {
+      enabled: typeof settings.enabled === 'boolean' ? settings.enabled : DEFAULT_SETTINGS.enabled,
+      thinkingSeconds: seconds('thinkingSeconds'),
+      answerSeconds: seconds('answerSeconds')
+    };
+  }
+
+  function durationMs(mode, settings) {
+    var normalized = normalizeSettings(settings);
+    return normalized[mode === 'answer' ? 'answerSeconds' : 'thinkingSeconds'] * 1000;
+  }
+
+  function createTimer(questionId, mode, settings) {
+    if (!validQuestionId(questionId)) throw new TypeError('Некорректный идентификатор вопроса для таймера.');
+    if (!validMode(mode)) throw new TypeError('Некорректный режим таймера.');
+    return { questionId: questionId, mode: mode, remainingMs: durationMs(mode, settings), deadline: null };
+  }
+
+  function validateTimer(value) {
+    return isRecord(value) && validQuestionId(value.questionId) && validMode(value.mode) &&
+      typeof value.remainingMs === 'number' && Number.isFinite(value.remainingMs) &&
+      value.remainingMs >= 0 && value.remainingMs <= MAX_REMAINING_MS &&
+      (value.deadline === null || validTimestamp(value.deadline));
+  }
+
+  function remainingMs(timer, now) {
+    if (!validateTimer(timer)) return 0;
+    var currentTime = now === undefined ? Date.now() : now;
+    if (!validTimestamp(currentTime)) return 0;
+    return Math.min(MAX_REMAINING_MS, Math.max(0, timer.deadline !== null ? timer.deadline - currentTime : timer.remainingMs));
+  }
+
+  function reduce(timer, action, settings, now) {
+    if (!validateTimer(timer) || !isRecord(action)) return timer;
+    var currentTime = now === undefined ? Date.now() : now;
+    if (!validTimestamp(currentTime)) return timer;
+    var remaining = remainingMs(timer, currentTime);
+    switch (action.type) {
+      case 'START': {
+        if (timer.deadline !== null && timer.deadline > currentTime) return timer;
+        var duration = remaining || durationMs(timer.mode, settings);
+        if (!validTimestamp(currentTime + duration)) return timer;
+        return Object.assign({}, timer, { remainingMs: duration, deadline: currentTime + duration });
+      }
+      case 'PAUSE':
+        if (timer.deadline === null) return timer;
+        return Object.assign({}, timer, { remainingMs: remaining, deadline: null });
+      case 'RESET': {
+        var fullDuration = durationMs(timer.mode, settings);
+        if (timer.deadline === null && timer.remainingMs === fullDuration) return timer;
+        return Object.assign({}, timer, { remainingMs: fullDuration, deadline: null });
+      }
+      case 'MODE':
+        if (!validMode(action.mode) || action.mode === timer.mode) return timer;
+        return Object.assign({}, timer, { mode: action.mode, remainingMs: durationMs(action.mode, settings), deadline: null });
+      case 'TICK':
+        if (timer.deadline === null || timer.deadline > currentTime) return timer;
+        return Object.assign({}, timer, { remainingMs: 0, deadline: null });
+      default:
+        return timer;
+    }
+  }
+
+  return {
+    DEFAULT_SETTINGS: DEFAULT_SETTINGS,
+    normalizeSettings: normalizeSettings,
+    createTimer: createTimer,
+    remainingMs: remainingMs,
+    reduce: reduce,
+    validateTimer: validateTimer
+  };
+});
+
+</script>
+<script>
 (function () {
   'use strict';
   const content = globalThis.GAME_CONTENT;
   const engine = globalThis.UnityGame;
+  const countdown = globalThis.UnityTimer;
   const questions = content.categories.flatMap(category => category.questions);
   const questionMap = new Map(questions.map(question => [question.id, question]));
   const categoryMap = new Map(content.categories.flatMap(category => category.questions.map(question => [question.id, category])));
   const STORAGE_KEY = 'unity-game-v1';
   const DRAFT_KEY = 'unity-game-teams-v1';
   const THEME_KEY = 'unity-game-theme-v1';
+  const TIMER_SETTINGS_KEY = 'unity-game-timer-settings-v1';
+  const TIMER_KEY = 'unity-game-timer-v1';
   const isAudience = new URLSearchParams(location.search).get('audience') === '1';
   const app = document.getElementById('app');
   const dialogs = document.getElementById('dialog-root');
@@ -530,6 +707,8 @@
   const lightColors = ['#eee8f7', '#eaf1e8', '#f9efdc', '#f7e9e5', '#e7f0f5', '#f5e8ef', '#e8f0f0', '#f2f0df'];
   let state = null;
   let theme = 'light';
+  let timerSettings = countdown.normalizeSettings(null);
+  let timer = null;
   let draft = { names: ['', ''], penalizeWrong: false };
   let audienceWindow = null;
   let channel = null;
@@ -566,7 +745,9 @@
     info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v6m0-10v1"/>',
     heart: '<path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8Z"/>',
     refresh: '<path d="M20 8a9 9 0 1 0 1 7M20 3v5h-5"/>',
-    clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>'
+    clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+    play: '<path d="m8 5 11 7-11 7V5Z"/>',
+    pause: '<path d="M8 5v14M16 5v14"/>'
   };
   function icon(name, extra = '') {
     return `<svg ${extra} width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths[name] || paths.sparkles}</svg>`;
@@ -590,6 +771,83 @@
 
   function themeSwitch() {
     return `<div class="theme-switch" role="group" aria-label="Оформление"><button class="theme-option" data-action="set-theme" data-theme="light" aria-pressed="${theme === 'light'}" title="Светлая тема">${icon('sun')}<span>Светлая</span></button><button class="theme-option" data-action="set-theme" data-theme="classic" aria-pressed="${theme === 'classic'}" title="Классическая синяя тема">${icon('grid')}<span>Классика</span></button></div>`;
+  }
+
+  function ensureQuestionTimer() {
+    if (state?.current && !state.current.resolved && (!timer || timer.questionId !== state.current.questionId)) {
+      timer = countdown.createTimer(state.current.questionId, 'thinking', timerSettings);
+    }
+  }
+
+  function timerSeconds(mode = timer?.mode || 'thinking') {
+    return mode === 'answer' ? timerSettings.answerSeconds : timerSettings.thinkingSeconds;
+  }
+
+  function timerTime(milliseconds) {
+    const seconds = Math.ceil(milliseconds / 1000);
+    return `${String(Math.floor(seconds / 60)).padStart(2, '0')}:${String(seconds % 60).padStart(2, '0')}`;
+  }
+
+  function timerStatus(remaining) {
+    if (remaining === 0) return 'Время вышло';
+    if (timer.deadline !== null) return 'Идёт отсчёт';
+    return remaining === timerSeconds() * 1000 ? 'Готов к запуску' : 'Пауза';
+  }
+
+  function timerPanel() {
+    if (!state?.current || state.current.resolved || !timer) return '';
+    if (isAudience && !timerSettings.enabled) return '';
+    const remaining = countdown.remainingMs(timer, Date.now());
+    const running = timer.deadline !== null && remaining > 0;
+    const modeLabel = timer.mode === 'answer' ? 'На ответ' : 'На размышление';
+    const readout = `<div class="timer-readout"><strong data-timer-count role="timer" aria-live="off">${timerTime(remaining)}</strong><span data-timer-status aria-live="polite">${timerStatus(remaining)}</span></div>`;
+    const progress = `<div class="timer-track" aria-hidden="true"><span data-timer-progress style="width:${Math.min(100, remaining / (timerSeconds() * 10))}%"></span></div>`;
+    if (isAudience) return `<section class="question-timer audience-timer ${remaining === 0 ? 'timer-expired' : ''}" aria-label="Таймер вопроса"><div class="timer-audience-label">${icon('clock')}<span data-timer-mode>${modeLabel}</span></div>${readout}${progress}</section>`;
+    return `<section class="question-timer ${timerSettings.enabled && remaining === 0 ? 'timer-expired' : ''}" aria-label="Таймер вопроса"><div class="timer-heading"><span>${icon('clock')}Таймеры</span><label class="timer-enable-label" for="timer-enabled">Включить<input class="toggle" id="timer-enabled" type="checkbox" ${timerSettings.enabled ? 'checked' : ''}></label></div>${timerSettings.enabled ? `<div class="timer-main"><div class="timer-modes" role="group" aria-label="Этап таймера"><button class="timer-mode" data-action="timer-mode" data-mode="thinking" aria-pressed="${timer.mode === 'thinking'}">На размышление</button><button class="timer-mode" data-action="timer-mode" data-mode="answer" aria-pressed="${timer.mode === 'answer'}">На ответ</button></div><label class="timer-duration">Секунд<input data-timer-duration="${timer.mode}" type="number" min="5" max="600" step="1" value="${timerSeconds()}" aria-label="${modeLabel}: длительность в секундах"></label>${readout}<button class="button primary" data-action="timer-toggle">${icon(running ? 'pause' : 'play')}${running ? 'Пауза' : remaining === 0 ? 'Ещё раз' : 'Старт'}</button><button class="button secondary icon-button" data-action="timer-reset" aria-label="Сбросить таймер" title="Сбросить таймер">${icon('refresh')}</button></div>${progress}` : ''}</section>`;
+  }
+
+  function pauseTimer() {
+    if (timer) timer = countdown.reduce(timer, { type: 'PAUSE' }, timerSettings, Date.now());
+  }
+
+  function updateTimer(action) {
+    if (isAudience || !timerSettings.enabled || !state?.current || state.current.resolved || !timer) return;
+    timer = countdown.reduce(timer, action, timerSettings, Date.now());
+    persist();
+    render();
+    syncAudience();
+  }
+
+  function enableTimers(enabled) {
+    if (isAudience || !state?.current || state.current.resolved || timerSettings.enabled === enabled) return;
+    pauseTimer();
+    timerSettings = { ...timerSettings, enabled };
+    ensureQuestionTimer();
+    persist();
+    render();
+    syncAudience();
+  }
+
+  function tickTimer() {
+    if (!timerSettings.enabled || !timer || !state?.current || state.current.resolved) return;
+    const now = Date.now();
+    const remaining = countdown.remainingMs(timer, now);
+    if (!isAudience && timer.deadline !== null && remaining === 0) {
+      timer = countdown.reduce(timer, { type: 'TICK' }, timerSettings, now);
+      persist();
+      syncAudience();
+      toast('Время вышло. Решение об ответе принимает ведущий.');
+      const button = app.querySelector('[data-action="timer-toggle"]');
+      if (button) button.innerHTML = `${icon('play')}Ещё раз`;
+    }
+    const count = app.querySelector('[data-timer-count]');
+    const status = app.querySelector('[data-timer-status]');
+    const progress = app.querySelector('[data-timer-progress]');
+    const panel = app.querySelector('.question-timer');
+    if (count && count.textContent !== timerTime(remaining)) count.textContent = timerTime(remaining);
+    if (status && status.textContent !== timerStatus(remaining)) status.textContent = timerStatus(remaining);
+    if (progress) progress.style.width = `${Math.min(100, remaining / (timerSeconds() * 10))}%`;
+    if (panel) panel.classList.toggle('timer-expired', remaining === 0);
   }
 
   function setupView() {
@@ -621,7 +879,7 @@
     } else {
       controls = `<div class="team-picker-heading"><strong>Кто отвечает?</strong><span>${current.attemptedTeamIds.length ? 'Слово другой команде' : 'Выберите команду перед оценкой ответа'}</span></div><div class="team-picker">${state.teams.map(team => { const attempted = current.attemptedTeamIds.includes(team.id); return `<button class="team-choice ${current.selectedTeamId === team.id ? 'selected' : ''}" style="${teamStyle(team.colorIndex)}" data-action="select-team" data-team="${team.id}" ${attempted ? 'disabled' : ''} aria-pressed="${current.selectedTeamId === team.id}"><i class="team-dot"></i><span>${esc(team.name)}</span>${attempted ? icon('check') : ''}</button>`; }).join('')}</div><div class="judgement"><button class="button correct" data-action="correct" ${!selectedTeam ? 'disabled' : ''}>${icon('check')}Верно · +${question.value}</button><button class="button incorrect" data-action="incorrect" ${!selectedTeam ? 'disabled' : ''}>${icon('close')}Неверно${state.penalizeWrong ? ` · −${question.value}` : ''}</button><button class="button secondary" data-action="pass-team" ${!selectedTeam ? 'disabled' : ''} title="Команда пропускает ответ без штрафа">${icon('skip')}Пас</button><span class="judge-spacer"></span><button class="button ghost" data-action="reveal" ${current.answerVisible ? 'disabled' : ''}>${icon('eye')}Ответ</button><button class="button ghost" data-action="skip-question" title="Пропустить весь вопрос без начисления баллов">Пропустить вопрос</button></div>`;
     }
-    return `<div class="question-layer ${isAudience ? 'audience-question' : ''}"><section class="question-dialog" ${!isAudience ? 'role="dialog" aria-modal="true"' : ''} aria-labelledby="question-text"><header class="question-top"><div class="question-meta">${icon(category.icon)}<span>${esc(category.title)}</span><span class="question-price">${question.value} баллов</span></div>${!isAudience ? `<button class="button ghost icon-button" data-action="close-question" aria-label="Вернуться к игровому полю" title="К полю (Esc)">${icon('close')}</button>` : '<span class="eyebrow">Своя игра</span>'}</header><div class="question-body"><h2 id="question-text" class="${question.text.length > 240 ? 'long' : ''}">${esc(question.text)}</h2>${answer}</div><div class="question-controls">${controls}</div></section></div>`;
+    return `<div class="question-layer ${isAudience ? 'audience-question' : ''}"><section class="question-dialog" ${!isAudience ? 'role="dialog" aria-modal="true"' : ''} aria-labelledby="question-text"><header class="question-top"><div class="question-meta">${icon(category.icon)}<span>${esc(category.title)}</span><span class="question-price">${question.value} баллов</span></div>${!isAudience ? `<button class="button ghost icon-button" data-action="close-question" aria-label="Вернуться к игровому полю" title="К полю (Esc)">${icon('close')}</button>` : '<span class="eyebrow">Своя игра</span>'}</header><div class="question-body"><h2 id="question-text" class="${question.text.length > 240 ? 'long' : ''}">${esc(question.text)}</h2>${answer}</div>${timerPanel()}<div class="question-controls">${controls}</div></section></div>`;
   }
 
   function resultsView() {
@@ -666,6 +924,9 @@
       else localStorage.removeItem(STORAGE_KEY);
       localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
       localStorage.setItem(THEME_KEY, theme);
+      localStorage.setItem(TIMER_SETTINGS_KEY, JSON.stringify(timerSettings));
+      if (state && timer) localStorage.setItem(TIMER_KEY, JSON.stringify({ gameStartedAt: state.startedAt, timer }));
+      else localStorage.removeItem(TIMER_KEY);
       storageAvailable = true;
     } catch (_) {
       if (storageAvailable) toast('Браузер не разрешил сохранение. Держите это окно открытым до конца игры.');
@@ -675,7 +936,7 @@
 
   function syncAudience() {
     if (isAudience) return;
-    const message = { type: 'unity-game-state', state, draft, theme };
+    const message = { type: 'unity-game-state', state, draft, theme, timerSettings, timer };
     if (audienceWindow && !audienceWindow.closed) audienceWindow.postMessage(message, '*');
     try { channel?.postMessage(message); } catch (_) { /* Direct popup sync remains available. */ }
   }
@@ -684,7 +945,13 @@
     if (isAudience || !state) return;
     const nextState = engine.reduce(state, action, questions);
     if (nextState === state) return;
+    const previousTeamId = state.current?.selectedTeamId;
     state = nextState;
+    if (['CLOSE_QUESTION', 'ANSWER', 'PASS_TEAM', 'SKIP_QUESTION', 'REVEAL_ANSWER', 'FINISH', 'UNDO'].includes(action.type)) pauseTimer();
+    if (action.type === 'SELECT_TEAM' && timer?.mode === 'answer' && previousTeamId !== state.current?.selectedTeamId) {
+      timer = countdown.reduce(timer, { type: 'RESET' }, timerSettings, Date.now());
+    }
+    ensureQuestionTimer();
     persist();
     render(focusAction);
     syncAudience();
@@ -696,6 +963,7 @@
     const names = draft.names.map((name, index) => name.trim() || `Команда ${index + 1}`);
     try {
       state = engine.createState(names, questions, { penalizeWrong: draft.penalizeWrong });
+      timer = null;
       draft.names = names;
       persist();
       render();
@@ -730,6 +998,7 @@
     confirm('Начать новую игру?', 'Текущий счёт и сыгранные вопросы будут сброшены. Названия команд сохранятся, и их можно будет изменить.', 'Новая игра', () => {
       draft = { names: state.teams.map(team => team.name), penalizeWrong: state.penalizeWrong };
       state = null;
+      timer = null;
       persist();
       render();
       syncAudience();
@@ -764,6 +1033,9 @@
     if (action === 'accept-confirm') { const callback = confirmAction; closeConfirm(); callback?.(); return; }
     if (confirmAction) return;
     switch (action) {
+      case 'timer-mode': updateTimer({ type: 'MODE', mode: button.dataset.mode }); break;
+      case 'timer-toggle': updateTimer({ type: timer?.deadline !== null && timer?.deadline > Date.now() ? 'PAUSE' : 'START' }); break;
+      case 'timer-reset': updateTimer({ type: 'RESET' }); break;
       case 'set-theme':
         if (!['light', 'classic'].includes(button.dataset.theme) || button.dataset.theme === theme) break;
         theme = button.dataset.theme;
@@ -814,6 +1086,7 @@
   });
   app.addEventListener('input', event => {
     if (isAudience) return;
+    if (event.target.id === 'timer-enabled') { enableTimers(event.target.checked); return; }
     if (event.target.matches('[data-team-input]')) {
       draft.names[Number(event.target.dataset.teamInput)] = event.target.value;
       const error = document.getElementById('form-error');
@@ -821,6 +1094,22 @@
       saveDraft();
     }
     if (event.target.id === 'penalty-toggle') { draft.penalizeWrong = event.target.checked; saveDraft(); }
+  });
+  app.addEventListener('change', event => {
+    if (isAudience || !event.target.matches('[data-timer-duration]') || !state?.current || state.current.resolved) return;
+    const mode = event.target.dataset.timerDuration;
+    const seconds = Number(event.target.value);
+    if (!['thinking', 'answer'].includes(mode)) return;
+    if (!Number.isInteger(seconds) || seconds < 5 || seconds > 600) {
+      event.target.value = String(timerSeconds(mode));
+      toast('Задайте от 5 до 600 секунд.');
+      return;
+    }
+    timerSettings = { ...timerSettings, [mode === 'answer' ? 'answerSeconds' : 'thinkingSeconds']: seconds };
+    if (timer?.mode === mode) timer = countdown.reduce(timer, { type: 'RESET' }, timerSettings, Date.now());
+    persist();
+    render();
+    syncAudience();
   });
 
   document.addEventListener('keydown', event => {
@@ -850,6 +1139,11 @@
     if (message.state !== null && !engine.validateState(message.state, questions)) return;
     state = message.state;
     if (message.theme === 'light' || message.theme === 'classic') theme = message.theme;
+    if (message.timerSettings) timerSettings = countdown.normalizeSettings(message.timerSettings);
+    if (Object.prototype.hasOwnProperty.call(message, 'timer')) {
+      timer = countdown.validateTimer(message.timer) && questionMap.has(message.timer.questionId) ? message.timer : null;
+    }
+    ensureQuestionTimer();
     if (message.draft && Array.isArray(message.draft.names) && message.draft.names.length >= 2 && message.draft.names.length <= 8 && message.draft.names.every(name => typeof name === 'string' && name.length <= 40)) draft = message.draft;
     render();
   }
@@ -870,22 +1164,40 @@
     const savedState = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
     if (savedState && engine.validateState(savedState, questions)) state = savedState;
   } catch (_) { storageAvailable = false; }
+  try {
+    timerSettings = countdown.normalizeSettings(JSON.parse(localStorage.getItem(TIMER_SETTINGS_KEY) || 'null'));
+    const savedTimer = JSON.parse(localStorage.getItem(TIMER_KEY) || 'null');
+    if (state && savedTimer?.gameStartedAt === state.startedAt && countdown.validateTimer(savedTimer.timer) && questionMap.has(savedTimer.timer.questionId)) timer = savedTimer.timer;
+  } catch (_) { /* Invalid timer preferences do not prevent restoring the game. */ }
+  ensureQuestionTimer();
+  if (!state?.current || state.current.resolved || !timerSettings.enabled) pauseTimer();
   if (isAudience) {
     const requestedTheme = new URLSearchParams(location.search).get('theme');
     if (requestedTheme === 'light' || requestedTheme === 'classic') theme = requestedTheme;
     document.title = 'В единстве — сила · Экран участников';
     if (window.opener) window.opener.postMessage({ type: 'unity-game-ready' }, '*');
     window.addEventListener('storage', event => {
+      if (event.key === TIMER_SETTINGS_KEY) {
+        try { timerSettings = countdown.normalizeSettings(JSON.parse(event.newValue || 'null')); render(); } catch (_) { /* Keep valid settings. */ }
+      }
+      if (event.key === TIMER_KEY) {
+        try {
+          const savedTimer = JSON.parse(event.newValue || 'null');
+          if (savedTimer === null) { timer = null; render(); }
+          else if (savedTimer.gameStartedAt === state?.startedAt && countdown.validateTimer(savedTimer.timer) && questionMap.has(savedTimer.timer.questionId)) { timer = savedTimer.timer; render(); }
+        } catch (_) { /* Wait for the next valid timer update. */ }
+      }
       if (event.key === THEME_KEY && (event.newValue === 'light' || event.newValue === 'classic')) {
         theme = event.newValue;
         render();
       }
       if (event.key === STORAGE_KEY) {
-        try { const next = event.newValue ? JSON.parse(event.newValue) : null; if (next === null || engine.validateState(next, questions)) { state = next; render(); } } catch (_) { /* Wait for the next valid update. */ }
+        try { const next = event.newValue ? JSON.parse(event.newValue) : null; if (next === null || engine.validateState(next, questions)) { state = next; ensureQuestionTimer(); render(); } } catch (_) { /* Wait for the next valid update. */ }
       }
     });
   }
   render();
+  setInterval(tickTimer, 250);
   if (state && !isAudience) toast('Игра восстановлена. Продолжаем с сохранённого места.');
 })();
 

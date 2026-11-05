@@ -2,12 +2,15 @@
   'use strict';
   const content = globalThis.GAME_CONTENT;
   const engine = globalThis.UnityGame;
+  const countdown = globalThis.UnityTimer;
   const questions = content.categories.flatMap(category => category.questions);
   const questionMap = new Map(questions.map(question => [question.id, question]));
   const categoryMap = new Map(content.categories.flatMap(category => category.questions.map(question => [question.id, category])));
   const STORAGE_KEY = 'unity-game-v1';
   const DRAFT_KEY = 'unity-game-teams-v1';
   const THEME_KEY = 'unity-game-theme-v1';
+  const TIMER_SETTINGS_KEY = 'unity-game-timer-settings-v1';
+  const TIMER_KEY = 'unity-game-timer-v1';
   const isAudience = new URLSearchParams(location.search).get('audience') === '1';
   const app = document.getElementById('app');
   const dialogs = document.getElementById('dialog-root');
@@ -15,6 +18,8 @@
   const lightColors = ['#eee8f7', '#eaf1e8', '#f9efdc', '#f7e9e5', '#e7f0f5', '#f5e8ef', '#e8f0f0', '#f2f0df'];
   let state = null;
   let theme = 'light';
+  let timerSettings = countdown.normalizeSettings(null);
+  let timer = null;
   let draft = { names: ['', ''], penalizeWrong: false };
   let audienceWindow = null;
   let channel = null;
@@ -51,7 +56,9 @@
     info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v6m0-10v1"/>',
     heart: '<path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8Z"/>',
     refresh: '<path d="M20 8a9 9 0 1 0 1 7M20 3v5h-5"/>',
-    clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>'
+    clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+    play: '<path d="m8 5 11 7-11 7V5Z"/>',
+    pause: '<path d="M8 5v14M16 5v14"/>'
   };
   function icon(name, extra = '') {
     return `<svg ${extra} width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths[name] || paths.sparkles}</svg>`;
@@ -75,6 +82,83 @@
 
   function themeSwitch() {
     return `<div class="theme-switch" role="group" aria-label="Оформление"><button class="theme-option" data-action="set-theme" data-theme="light" aria-pressed="${theme === 'light'}" title="Светлая тема">${icon('sun')}<span>Светлая</span></button><button class="theme-option" data-action="set-theme" data-theme="classic" aria-pressed="${theme === 'classic'}" title="Классическая синяя тема">${icon('grid')}<span>Классика</span></button></div>`;
+  }
+
+  function ensureQuestionTimer() {
+    if (state?.current && !state.current.resolved && (!timer || timer.questionId !== state.current.questionId)) {
+      timer = countdown.createTimer(state.current.questionId, 'thinking', timerSettings);
+    }
+  }
+
+  function timerSeconds(mode = timer?.mode || 'thinking') {
+    return mode === 'answer' ? timerSettings.answerSeconds : timerSettings.thinkingSeconds;
+  }
+
+  function timerTime(milliseconds) {
+    const seconds = Math.ceil(milliseconds / 1000);
+    return `${String(Math.floor(seconds / 60)).padStart(2, '0')}:${String(seconds % 60).padStart(2, '0')}`;
+  }
+
+  function timerStatus(remaining) {
+    if (remaining === 0) return 'Время вышло';
+    if (timer.deadline !== null) return 'Идёт отсчёт';
+    return remaining === timerSeconds() * 1000 ? 'Готов к запуску' : 'Пауза';
+  }
+
+  function timerPanel() {
+    if (!state?.current || state.current.resolved || !timer) return '';
+    if (isAudience && !timerSettings.enabled) return '';
+    const remaining = countdown.remainingMs(timer, Date.now());
+    const running = timer.deadline !== null && remaining > 0;
+    const modeLabel = timer.mode === 'answer' ? 'На ответ' : 'На размышление';
+    const readout = `<div class="timer-readout"><strong data-timer-count role="timer" aria-live="off">${timerTime(remaining)}</strong><span data-timer-status aria-live="polite">${timerStatus(remaining)}</span></div>`;
+    const progress = `<div class="timer-track" aria-hidden="true"><span data-timer-progress style="width:${Math.min(100, remaining / (timerSeconds() * 10))}%"></span></div>`;
+    if (isAudience) return `<section class="question-timer audience-timer ${remaining === 0 ? 'timer-expired' : ''}" aria-label="Таймер вопроса"><div class="timer-audience-label">${icon('clock')}<span data-timer-mode>${modeLabel}</span></div>${readout}${progress}</section>`;
+    return `<section class="question-timer ${timerSettings.enabled && remaining === 0 ? 'timer-expired' : ''}" aria-label="Таймер вопроса"><div class="timer-heading"><span>${icon('clock')}Таймеры</span><label class="timer-enable-label" for="timer-enabled">Включить<input class="toggle" id="timer-enabled" type="checkbox" ${timerSettings.enabled ? 'checked' : ''}></label></div>${timerSettings.enabled ? `<div class="timer-main"><div class="timer-modes" role="group" aria-label="Этап таймера"><button class="timer-mode" data-action="timer-mode" data-mode="thinking" aria-pressed="${timer.mode === 'thinking'}">На размышление</button><button class="timer-mode" data-action="timer-mode" data-mode="answer" aria-pressed="${timer.mode === 'answer'}">На ответ</button></div><label class="timer-duration">Секунд<input data-timer-duration="${timer.mode}" type="number" min="5" max="600" step="1" value="${timerSeconds()}" aria-label="${modeLabel}: длительность в секундах"></label>${readout}<button class="button primary" data-action="timer-toggle">${icon(running ? 'pause' : 'play')}${running ? 'Пауза' : remaining === 0 ? 'Ещё раз' : 'Старт'}</button><button class="button secondary icon-button" data-action="timer-reset" aria-label="Сбросить таймер" title="Сбросить таймер">${icon('refresh')}</button></div>${progress}` : ''}</section>`;
+  }
+
+  function pauseTimer() {
+    if (timer) timer = countdown.reduce(timer, { type: 'PAUSE' }, timerSettings, Date.now());
+  }
+
+  function updateTimer(action) {
+    if (isAudience || !timerSettings.enabled || !state?.current || state.current.resolved || !timer) return;
+    timer = countdown.reduce(timer, action, timerSettings, Date.now());
+    persist();
+    render();
+    syncAudience();
+  }
+
+  function enableTimers(enabled) {
+    if (isAudience || !state?.current || state.current.resolved || timerSettings.enabled === enabled) return;
+    pauseTimer();
+    timerSettings = { ...timerSettings, enabled };
+    ensureQuestionTimer();
+    persist();
+    render();
+    syncAudience();
+  }
+
+  function tickTimer() {
+    if (!timerSettings.enabled || !timer || !state?.current || state.current.resolved) return;
+    const now = Date.now();
+    const remaining = countdown.remainingMs(timer, now);
+    if (!isAudience && timer.deadline !== null && remaining === 0) {
+      timer = countdown.reduce(timer, { type: 'TICK' }, timerSettings, now);
+      persist();
+      syncAudience();
+      toast('Время вышло. Решение об ответе принимает ведущий.');
+      const button = app.querySelector('[data-action="timer-toggle"]');
+      if (button) button.innerHTML = `${icon('play')}Ещё раз`;
+    }
+    const count = app.querySelector('[data-timer-count]');
+    const status = app.querySelector('[data-timer-status]');
+    const progress = app.querySelector('[data-timer-progress]');
+    const panel = app.querySelector('.question-timer');
+    if (count && count.textContent !== timerTime(remaining)) count.textContent = timerTime(remaining);
+    if (status && status.textContent !== timerStatus(remaining)) status.textContent = timerStatus(remaining);
+    if (progress) progress.style.width = `${Math.min(100, remaining / (timerSeconds() * 10))}%`;
+    if (panel) panel.classList.toggle('timer-expired', remaining === 0);
   }
 
   function setupView() {
@@ -106,7 +190,7 @@
     } else {
       controls = `<div class="team-picker-heading"><strong>Кто отвечает?</strong><span>${current.attemptedTeamIds.length ? 'Слово другой команде' : 'Выберите команду перед оценкой ответа'}</span></div><div class="team-picker">${state.teams.map(team => { const attempted = current.attemptedTeamIds.includes(team.id); return `<button class="team-choice ${current.selectedTeamId === team.id ? 'selected' : ''}" style="${teamStyle(team.colorIndex)}" data-action="select-team" data-team="${team.id}" ${attempted ? 'disabled' : ''} aria-pressed="${current.selectedTeamId === team.id}"><i class="team-dot"></i><span>${esc(team.name)}</span>${attempted ? icon('check') : ''}</button>`; }).join('')}</div><div class="judgement"><button class="button correct" data-action="correct" ${!selectedTeam ? 'disabled' : ''}>${icon('check')}Верно · +${question.value}</button><button class="button incorrect" data-action="incorrect" ${!selectedTeam ? 'disabled' : ''}>${icon('close')}Неверно${state.penalizeWrong ? ` · −${question.value}` : ''}</button><button class="button secondary" data-action="pass-team" ${!selectedTeam ? 'disabled' : ''} title="Команда пропускает ответ без штрафа">${icon('skip')}Пас</button><span class="judge-spacer"></span><button class="button ghost" data-action="reveal" ${current.answerVisible ? 'disabled' : ''}>${icon('eye')}Ответ</button><button class="button ghost" data-action="skip-question" title="Пропустить весь вопрос без начисления баллов">Пропустить вопрос</button></div>`;
     }
-    return `<div class="question-layer ${isAudience ? 'audience-question' : ''}"><section class="question-dialog" ${!isAudience ? 'role="dialog" aria-modal="true"' : ''} aria-labelledby="question-text"><header class="question-top"><div class="question-meta">${icon(category.icon)}<span>${esc(category.title)}</span><span class="question-price">${question.value} баллов</span></div>${!isAudience ? `<button class="button ghost icon-button" data-action="close-question" aria-label="Вернуться к игровому полю" title="К полю (Esc)">${icon('close')}</button>` : '<span class="eyebrow">Своя игра</span>'}</header><div class="question-body"><h2 id="question-text" class="${question.text.length > 240 ? 'long' : ''}">${esc(question.text)}</h2>${answer}</div><div class="question-controls">${controls}</div></section></div>`;
+    return `<div class="question-layer ${isAudience ? 'audience-question' : ''}"><section class="question-dialog" ${!isAudience ? 'role="dialog" aria-modal="true"' : ''} aria-labelledby="question-text"><header class="question-top"><div class="question-meta">${icon(category.icon)}<span>${esc(category.title)}</span><span class="question-price">${question.value} баллов</span></div>${!isAudience ? `<button class="button ghost icon-button" data-action="close-question" aria-label="Вернуться к игровому полю" title="К полю (Esc)">${icon('close')}</button>` : '<span class="eyebrow">Своя игра</span>'}</header><div class="question-body"><h2 id="question-text" class="${question.text.length > 240 ? 'long' : ''}">${esc(question.text)}</h2>${answer}</div>${timerPanel()}<div class="question-controls">${controls}</div></section></div>`;
   }
 
   function resultsView() {
@@ -151,6 +235,9 @@
       else localStorage.removeItem(STORAGE_KEY);
       localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
       localStorage.setItem(THEME_KEY, theme);
+      localStorage.setItem(TIMER_SETTINGS_KEY, JSON.stringify(timerSettings));
+      if (state && timer) localStorage.setItem(TIMER_KEY, JSON.stringify({ gameStartedAt: state.startedAt, timer }));
+      else localStorage.removeItem(TIMER_KEY);
       storageAvailable = true;
     } catch (_) {
       if (storageAvailable) toast('Браузер не разрешил сохранение. Держите это окно открытым до конца игры.');
@@ -160,7 +247,7 @@
 
   function syncAudience() {
     if (isAudience) return;
-    const message = { type: 'unity-game-state', state, draft, theme };
+    const message = { type: 'unity-game-state', state, draft, theme, timerSettings, timer };
     if (audienceWindow && !audienceWindow.closed) audienceWindow.postMessage(message, '*');
     try { channel?.postMessage(message); } catch (_) { /* Direct popup sync remains available. */ }
   }
@@ -169,7 +256,13 @@
     if (isAudience || !state) return;
     const nextState = engine.reduce(state, action, questions);
     if (nextState === state) return;
+    const previousTeamId = state.current?.selectedTeamId;
     state = nextState;
+    if (['CLOSE_QUESTION', 'ANSWER', 'PASS_TEAM', 'SKIP_QUESTION', 'REVEAL_ANSWER', 'FINISH', 'UNDO'].includes(action.type)) pauseTimer();
+    if (action.type === 'SELECT_TEAM' && timer?.mode === 'answer' && previousTeamId !== state.current?.selectedTeamId) {
+      timer = countdown.reduce(timer, { type: 'RESET' }, timerSettings, Date.now());
+    }
+    ensureQuestionTimer();
     persist();
     render(focusAction);
     syncAudience();
@@ -181,6 +274,7 @@
     const names = draft.names.map((name, index) => name.trim() || `Команда ${index + 1}`);
     try {
       state = engine.createState(names, questions, { penalizeWrong: draft.penalizeWrong });
+      timer = null;
       draft.names = names;
       persist();
       render();
@@ -215,6 +309,7 @@
     confirm('Начать новую игру?', 'Текущий счёт и сыгранные вопросы будут сброшены. Названия команд сохранятся, и их можно будет изменить.', 'Новая игра', () => {
       draft = { names: state.teams.map(team => team.name), penalizeWrong: state.penalizeWrong };
       state = null;
+      timer = null;
       persist();
       render();
       syncAudience();
@@ -249,6 +344,9 @@
     if (action === 'accept-confirm') { const callback = confirmAction; closeConfirm(); callback?.(); return; }
     if (confirmAction) return;
     switch (action) {
+      case 'timer-mode': updateTimer({ type: 'MODE', mode: button.dataset.mode }); break;
+      case 'timer-toggle': updateTimer({ type: timer?.deadline !== null && timer?.deadline > Date.now() ? 'PAUSE' : 'START' }); break;
+      case 'timer-reset': updateTimer({ type: 'RESET' }); break;
       case 'set-theme':
         if (!['light', 'classic'].includes(button.dataset.theme) || button.dataset.theme === theme) break;
         theme = button.dataset.theme;
@@ -299,6 +397,7 @@
   });
   app.addEventListener('input', event => {
     if (isAudience) return;
+    if (event.target.id === 'timer-enabled') { enableTimers(event.target.checked); return; }
     if (event.target.matches('[data-team-input]')) {
       draft.names[Number(event.target.dataset.teamInput)] = event.target.value;
       const error = document.getElementById('form-error');
@@ -306,6 +405,22 @@
       saveDraft();
     }
     if (event.target.id === 'penalty-toggle') { draft.penalizeWrong = event.target.checked; saveDraft(); }
+  });
+  app.addEventListener('change', event => {
+    if (isAudience || !event.target.matches('[data-timer-duration]') || !state?.current || state.current.resolved) return;
+    const mode = event.target.dataset.timerDuration;
+    const seconds = Number(event.target.value);
+    if (!['thinking', 'answer'].includes(mode)) return;
+    if (!Number.isInteger(seconds) || seconds < 5 || seconds > 600) {
+      event.target.value = String(timerSeconds(mode));
+      toast('Задайте от 5 до 600 секунд.');
+      return;
+    }
+    timerSettings = { ...timerSettings, [mode === 'answer' ? 'answerSeconds' : 'thinkingSeconds']: seconds };
+    if (timer?.mode === mode) timer = countdown.reduce(timer, { type: 'RESET' }, timerSettings, Date.now());
+    persist();
+    render();
+    syncAudience();
   });
 
   document.addEventListener('keydown', event => {
@@ -335,6 +450,11 @@
     if (message.state !== null && !engine.validateState(message.state, questions)) return;
     state = message.state;
     if (message.theme === 'light' || message.theme === 'classic') theme = message.theme;
+    if (message.timerSettings) timerSettings = countdown.normalizeSettings(message.timerSettings);
+    if (Object.prototype.hasOwnProperty.call(message, 'timer')) {
+      timer = countdown.validateTimer(message.timer) && questionMap.has(message.timer.questionId) ? message.timer : null;
+    }
+    ensureQuestionTimer();
     if (message.draft && Array.isArray(message.draft.names) && message.draft.names.length >= 2 && message.draft.names.length <= 8 && message.draft.names.every(name => typeof name === 'string' && name.length <= 40)) draft = message.draft;
     render();
   }
@@ -355,21 +475,39 @@
     const savedState = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
     if (savedState && engine.validateState(savedState, questions)) state = savedState;
   } catch (_) { storageAvailable = false; }
+  try {
+    timerSettings = countdown.normalizeSettings(JSON.parse(localStorage.getItem(TIMER_SETTINGS_KEY) || 'null'));
+    const savedTimer = JSON.parse(localStorage.getItem(TIMER_KEY) || 'null');
+    if (state && savedTimer?.gameStartedAt === state.startedAt && countdown.validateTimer(savedTimer.timer) && questionMap.has(savedTimer.timer.questionId)) timer = savedTimer.timer;
+  } catch (_) { /* Invalid timer preferences do not prevent restoring the game. */ }
+  ensureQuestionTimer();
+  if (!state?.current || state.current.resolved || !timerSettings.enabled) pauseTimer();
   if (isAudience) {
     const requestedTheme = new URLSearchParams(location.search).get('theme');
     if (requestedTheme === 'light' || requestedTheme === 'classic') theme = requestedTheme;
     document.title = 'В единстве — сила · Экран участников';
     if (window.opener) window.opener.postMessage({ type: 'unity-game-ready' }, '*');
     window.addEventListener('storage', event => {
+      if (event.key === TIMER_SETTINGS_KEY) {
+        try { timerSettings = countdown.normalizeSettings(JSON.parse(event.newValue || 'null')); render(); } catch (_) { /* Keep valid settings. */ }
+      }
+      if (event.key === TIMER_KEY) {
+        try {
+          const savedTimer = JSON.parse(event.newValue || 'null');
+          if (savedTimer === null) { timer = null; render(); }
+          else if (savedTimer.gameStartedAt === state?.startedAt && countdown.validateTimer(savedTimer.timer) && questionMap.has(savedTimer.timer.questionId)) { timer = savedTimer.timer; render(); }
+        } catch (_) { /* Wait for the next valid timer update. */ }
+      }
       if (event.key === THEME_KEY && (event.newValue === 'light' || event.newValue === 'classic')) {
         theme = event.newValue;
         render();
       }
       if (event.key === STORAGE_KEY) {
-        try { const next = event.newValue ? JSON.parse(event.newValue) : null; if (next === null || engine.validateState(next, questions)) { state = next; render(); } } catch (_) { /* Wait for the next valid update. */ }
+        try { const next = event.newValue ? JSON.parse(event.newValue) : null; if (next === null || engine.validateState(next, questions)) { state = next; ensureQuestionTimer(); render(); } } catch (_) { /* Wait for the next valid update. */ }
       }
     });
   }
   render();
+  setInterval(tickTimer, 250);
   if (state && !isAudience) toast('Игра восстановлена. Продолжаем с сохранённого места.');
 })();
