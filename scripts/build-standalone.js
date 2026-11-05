@@ -1,0 +1,13 @@
+'use strict';
+const fs = require('node:fs');
+const path = require('node:path');
+const root = path.resolve(__dirname, '..');
+const read = name => fs.readFileSync(path.join(root, name), 'utf8');
+const scripts = ['questions.js', 'game-core.js', 'app.js'];
+let html = read('index.html');
+html = html.replace('    <link rel="stylesheet" href="styles.css">', `<style>\n${read('styles.css')}\n</style>`);
+for (const name of scripts) html = html.replace(`    <script defer src="${name}"></script>\n`, '');
+const inline = scripts.map(name => `<script>\n${read(name).replace(/<\/script/gi, '<\\/script')}\n</script>`).join('\n');
+html = html.replace('  </body>', `${inline}\n  </body>`);
+fs.writeFileSync(path.join(root, 'Игра.html'), html, 'utf8');
+console.log('Готово: Игра.html — автономная игра в одном файле.');
